@@ -87,7 +87,7 @@ if __name__ == "__main__":
     config["num_epochs"] = args.n_epoch
 
     utrain_data = UdacityDataset2(
-        csv_path=config["val_csv_path"],#train_csv_path
+        csv_path=config["train_csv_path"],#train_csv_path
         is_train=True,
         config=config
     )
