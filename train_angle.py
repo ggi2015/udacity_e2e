@@ -39,8 +39,8 @@ def train_model(net:nn.Module, criterion, optimizer, data_loader:Dict, config:Di
 
             pred_angs = net(images)
 
-            # print(pred_spds.size(),spds.size(),"|",pred_angs.size(),angs.size())
-            loss = criterion(pred_angs, angs)
+            # print(pred_angs)
+            loss = criterion(pred_angs, angs.unsqueeze(1))
             epoch_loss += loss.item()
             
             optimizer.zero_grad()
@@ -67,7 +67,7 @@ def train_model(net:nn.Module, criterion, optimizer, data_loader:Dict, config:Di
                 with torch.no_grad():
                     pred_angs = net(images)
                     
-                    loss = criterion(pred_angs, angs)
+                    loss = criterion(pred_angs, angs.unsqueeze(1))
                     val_epoch_loss += loss.item()
                 
             dt = time.time() - start_time
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     data_loader["val"] = uval_loader
 
     net = Unet2Angle(config=config)
-
+    # net = Conv2Angle()
     if args.resume is not None:
         net, _ = load_ckpt(net, None, args.resume)
         
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     optimizer = optim.Adam(net.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
 
-    criterion = nn.SmoothL1Loss()   
+    criterion = nn.MSELoss()   
 
     train_model(net, criterion, optimizer, data_loader, config)
 

@@ -64,7 +64,7 @@ config["val_batch_size"] = config["train_batch_size"]
 config["workers"] = 0
 config["val_workers"] = config["workers"]
 
-config["lr"] = 1e-3
+config["lr"] = 1e-4
 config["weight_decay"] = 1e-8
 
 
@@ -376,7 +376,7 @@ class Unet2Angle(nn.Module):
         a_feature = self.fc4(a_feature)
         a = self.fc5(a_feature)
 
-        return a.squeeze()
+        return a
     
     def label2color(self, label, colormap):
         """
