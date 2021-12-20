@@ -474,7 +474,7 @@ class UConv2Angle(nn.Module):
             nn.Dropout(0.5)
         )
         self.linear_layers = nn.Sequential(
-            nn.Linear(in_features=64 * 33 * 33, out_features=100),
+            nn.Linear(in_features=64 * 13 * 33, out_features=100),
             nn.ELU(),
             nn.Linear(in_features=100, out_features=50),
             nn.ELU(),
@@ -600,7 +600,7 @@ if __name__ == "__main__":
     unet2control = Unet2Control(config)
     conv2control = Conv2Angle()
     uconv2control = UConv2Angle(config)
-    in_tensor = torch.randn(5,3,320,320)
+    in_tensor = torch.randn(5,3,160,320)
     out_tensor = uconv2control(in_tensor)
     print(out_tensor.shape)
 
