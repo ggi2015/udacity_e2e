@@ -39,10 +39,10 @@ import torchvision.transforms.functional as TF
 from torchvision.models import resnet18
 from torchvision.models.segmentation import fcn_resnet50
 
-from net import load_ckpt, config, PostProcess, Unet2Control
+from net import load_ckpt, config, PostProcess, Unet2Control, Unet2Angle, Conv2Angle
 
 root_path = os.path.abspath(os.curdir)
-model_path = os.path.join(root_path,"results","model_save","75.0.ckpt")
+model_path = os.path.join(root_path,"results","model_save","Unet2Angle99.0.ckpt")
 
 # net = fcn_resnet50()
 # net, _ = load_ckpt(net,None,model_path)
@@ -50,7 +50,7 @@ model_path = os.path.join(root_path,"results","model_save","75.0.ckpt")
 # net.to(device=config["device"])
 # post_process.to(device=config["device"])
 
-net = Unet2Control(config)
+net = Unet2Angle(config)
 net, _ = load_ckpt(net,None,model_path)
 net.to(device=config["device"])
 
@@ -101,7 +101,7 @@ class SimplePIController:
 
 
 controller = SimplePIController(0.1, 0.002)
-set_speed = 10
+set_speed = 20
 controller.set_desired(set_speed)
 
 
@@ -118,17 +118,16 @@ def telemetry(sid, data):
         # The current image from the center camera of the car
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
-        spd, ang = net(tsf(image).unsqueeze(dim=0).to(device=config["device"]))
-        # print(type(spd),spd.shape,spd.size(),spd)
+        image = tsf_full_img(image).unsqueeze(dim=0).to(device=config["device"])
 
-        ang = ang.detach().cpu().numpy()
-        spd = spd.detach().cpu().numpy()
-        print(ang, spd)
+        # image = torch.randn(1,3,160,320).to(device=config["device"])
+        # print(image.shape)
+        ang = net(image)
+
+        ang = ang.detach().squeeze().cpu().numpy()
         #steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
         steering_angle = ang
         throttle = controller.update(float(speed))
-
-        # throttle = float(spd)
 
         print(steering_angle, throttle)
         send_control(steering_angle, throttle)

@@ -104,7 +104,8 @@ if __name__ == "__main__":
     data_loader["train"] = utrain_loader
     data_loader["val"] = uval_loader
 
-    net = Unet2Angle(config=config)
+    # net = Unet2Angle(config=config)
+    net = Conv2Angle()
 
     if args.resume is not None:
         net, _ = load_ckpt(net, None, args.resume)

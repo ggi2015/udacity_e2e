@@ -376,7 +376,7 @@ class Unet2Angle(nn.Module):
         a_feature = self.fc4(a_feature)
         a = self.fc5(a_feature)
 
-        return a.squeeze()
+        return a
     
     def label2color(self, label, colormap):
         """
@@ -431,6 +431,66 @@ class Conv2Angle(nn.Module):
 
     def forward(self, input):
         """Forward pass."""
+        output = self.conv_layers(input)
+        # print(output.shape)
+        output = output.view(output.size(0), -1)
+        output = self.linear_layers(output)
+        return output
+
+class UConv2Angle(nn.Module):
+    """NVIDIA model used in the paper."""
+
+    def __init__(self,config):
+        """Initialize NVIDIA model.
+        NVIDIA model used
+            Image normalization to avoid saturation and make gradients work better.
+            Convolution: 5x5, filter: 24, strides: 2x2, activation: ELU
+            Convolution: 5x5, filter: 36, strides: 2x2, activation: ELU
+            Convolution: 5x5, filter: 48, strides: 2x2, activation: ELU
+            Convolution: 3x3, filter: 64, strides: 1x1, activation: ELU
+            Convolution: 3x3, filter: 64, strides: 1x1, activation: ELU
+            Drop out (0.5)
+            Fully connected: neurons: 100, activation: ELU
+            Fully connected: neurons: 50, activation: ELU
+            Fully connected: neurons: 10, activation: ELU
+            Fully connected: neurons: 1 (output)
+        the convolution layers are meant to handle feature engineering.
+        the fully connected layer for predicting the steering angle.
+        the elu activation function is for taking care of vanishing gradient problem.
+        """
+        super(UConv2Angle, self).__init__()
+
+        self.unet = UNet(n_channels=config["unet_n_channels"],n_classes=config["unet_n_classes"])
+
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(4, 24, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(24, 36, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(36, 48, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(48, 64, 3),
+            nn.ELU(),
+            nn.Conv2d(64, 64, 3),
+            nn.Dropout(0.5)
+        )
+        self.linear_layers = nn.Sequential(
+            nn.Linear(in_features=64 * 33 * 33, out_features=100),
+            nn.ELU(),
+            nn.Linear(in_features=100, out_features=50),
+            nn.ELU(),
+            nn.Linear(in_features=50, out_features=10),
+            nn.Linear(in_features=10, out_features=1)
+        )
+
+    def forward(self, input):
+        """Forward pass."""
+        unet_out = self.unet(input)
+        seg_idx_img = torch.argmax(unet_out,dim=1)
+        seg_idx_img = seg_idx_img.view(seg_idx_img.size()[0],1,seg_idx_img.size()[-2],seg_idx_img.size()[-1])
+
+        input = torch.cat((input,seg_idx_img.float()),dim=1)
+
         output = self.conv_layers(input)
         # print(output.shape)
         output = output.view(output.size(0), -1)
@@ -539,12 +599,16 @@ if __name__ == "__main__":
     import numpy as np
     unet = UNet(3,2)
     unet2control = Unet2Control(config)
+    conv2control = Conv2Angle()
+    uconv2control = UConv2Angle(config)
     in_tensor = torch.randn(5,3,320,320)
-    out_tensor = unet2control(in_tensor)
-    print(out_tensor)
-    total = sum([param.nelement() for param in unet2control.parameters()])
-    trainable = sum(p.numel() for p in unet2control.parameters() if p.requires_grad)
-    print("num of parameter: %.2fM,%.2fM"%(total/1e6,trainable/1e6))
+    out_tensor = uconv2control(in_tensor)
+    print(out_tensor.shape)
+    
+    unet_total = sum([param.nelement() for param in unet2control.parameters()])
+    conv2control_total = sum([param.nelement() for param in conv2control.parameters()])
+    uconv2control_total = sum([p.numel() for p in uconv2control.parameters()])
+    print("num of paramete(unet_total,conv2control_total,uconv2control_total)r: %.2fM,%.2fM,%.2fM"%(unet_total/1e6,conv2control_total/1e6,uconv2control_total/1e6))
     quit()
 
     model = Fcn2Control(2)
