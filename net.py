@@ -604,7 +604,7 @@ if __name__ == "__main__":
     in_tensor = torch.randn(5,3,320,320)
     out_tensor = uconv2control(in_tensor)
     print(out_tensor.shape)
-    
+    quit()
     unet_total = sum([param.nelement() for param in unet2control.parameters()])
     conv2control_total = sum([param.nelement() for param in conv2control.parameters()])
     uconv2control_total = sum([p.numel() for p in uconv2control.parameters()])
