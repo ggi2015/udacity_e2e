@@ -25,9 +25,8 @@ config = dict()
 """Dataset"""
 # Raw Dataset
 # TODO gai
-# config["train_csv_path"] = "D:\\udacity\\term1-simulator-windows\\dataRecord\\driving_log2.csv"
-config["train_csv_path"] = "D:\\udacity\\term1-simulator-windows\\dataTest\\driving_log.csv"
-config["val_csv_path"] = "D:\\udacity\\term1-simulator-windows\\dataTest\\driving_log.csv"
+config["train_csv_path"] = 
+config["val_csv_path"] = 
 
 config["crop_size"] = (320, 320)
 config["center_crop_size"] = 320
@@ -604,7 +603,7 @@ if __name__ == "__main__":
     in_tensor = torch.randn(5,3,320,320)
     out_tensor = uconv2control(in_tensor)
     print(out_tensor.shape)
-    quit()
+
     unet_total = sum([param.nelement() for param in unet2control.parameters()])
     conv2control_total = sum([param.nelement() for param in conv2control.parameters()])
     uconv2control_total = sum([p.numel() for p in uconv2control.parameters()])
