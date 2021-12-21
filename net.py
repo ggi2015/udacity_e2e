@@ -496,6 +496,49 @@ class UConv2Angle(nn.Module):
         output = self.linear_layers(output)
         return output
 
+class UC2Angle(nn.Module):
+    """NVIDIA model used in the paper."""
+
+    def __init__(self,config):
+        """Initialize NVIDIA model.
+  
+        """
+        super(UC2Angle, self).__init__()
+
+        self.unet = UNet(
+            n_channels=config["unet_n_channels"],
+            n_classes=config["unet_n_classes"]
+        )
+
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(self.unet.n_classes, 24, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(24, 36, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(36, 48, 5, stride=2),
+            nn.ELU(),
+            nn.Conv2d(48, 64, 3),
+            nn.ELU(),
+            nn.Conv2d(64, 64, 3),
+            nn.Dropout(0.5)
+        )
+        self.linear_layers = nn.Sequential(
+            nn.Linear(in_features=64 * 13 * 33, out_features=100),
+            nn.ELU(),
+            nn.Linear(in_features=100, out_features=50),
+            nn.ELU(),
+            nn.Linear(in_features=50, out_features=10),
+            nn.Linear(in_features=10, out_features=1)
+        )
+
+    def forward(self, input):
+        """Forward pass."""
+        unet_out = self.unet(input)
+        output = self.conv_layers(unet_out)
+        output = output.view(output.size(0), -1)
+        output = self.linear_layers(output)
+        return output
+
 
 class LeNet(nn.Module):
     """LeNet architecture."""
@@ -600,10 +643,12 @@ if __name__ == "__main__":
     unet2control = Unet2Control(config)
     conv2control = Conv2Angle()
     uconv2control = UConv2Angle(config)
+    uc2control = UC2Angle(config)
     in_tensor = torch.randn(5,3,160,320)
-    out_tensor = uconv2control(in_tensor)
-    print(out_tensor.shape)
-
+    out_tensor1 = uc2control(in_tensor)
+    # out_tensor2 = uconv2control(in_tensor)
+    print(out_tensor1.shape)
+    quit()
     unet_total = sum([param.nelement() for param in unet2control.parameters()])
     conv2control_total = sum([param.nelement() for param in conv2control.parameters()])
     uconv2control_total = sum([p.numel() for p in uconv2control.parameters()])
